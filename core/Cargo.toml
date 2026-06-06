@@ -1,0 +1,27 @@
+[package]
+name = "scriba-core"
+version = "0.1.0"
+edition = "2021"
+description = "Scriba core — headless audio decoding, transcription, and diarization"
+
+[dependencies]
+whisper-rs = { git = "https://github.com/dariofinardi/whisper-rs.git", tag = "v20260606" }
+symphonia = { version = "0.5", features = ["mp3", "ogg", "wav", "pcm", "vorbis"] }
+rubato = "0.15"
+cpal = "0.15"
+ringbuf = "0.4"
+ctrlc = "3"
+anyhow = "1"
+log = "0.4"
+dirs = "5"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
+sherpa-rs = { version = "0.6", optional = true, default-features = false, features = [] }
+tar = "0.4"
+bzip2 = "0.5"
+
+[features]
+default = []
+diarize = ["sherpa-rs"]
+cuda = ["whisper-rs/cuda"]
+metal = ["whisper-rs/metal"]
+vulkan = ["whisper-rs/vulkan"]

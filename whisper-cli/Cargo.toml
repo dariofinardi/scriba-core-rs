@@ -1,0 +1,20 @@
+[package]
+name = "whisper-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI speech-to-text powered by Whisper"
+
+[[bin]]
+name = "whisper-cli"
+path = "src/main.rs"
+
+[dependencies]
+scriba-core = { path = "../core" }
+clap = { version = "4", features = ["derive", "env"] }
+anyhow = "1"
+log = "0.4"
+env_logger = "0.11"
+
+[features]
+default = []
+diarize = ["scriba-core/diarize"]
