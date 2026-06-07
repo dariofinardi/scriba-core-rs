@@ -3,7 +3,7 @@
 **Motore di trascrizione vocale headless per Rust** — decodifica audio, resampling, inferenza Whisper, cattura microfono e diarizzazione speaker, senza alcuna dipendenza da UI.
 
 ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Windows-blue)
 
 ## Perché scriba-core
 
@@ -175,12 +175,16 @@ Poi compilare normalmente con `cargo build --release`.
 | [cpal](https://crates.io/crates/cpal) | Cattura audio cross-platform |
 | [sherpa-rs](https://crates.io/crates/sherpa-rs) | Diarizzazione speaker (opzionale) |
 
-## Piattaforme supportate
+## Piattaforme
 
-- Windows x86_64
-- Windows ARM64 (Qualcomm Snapdragon X Elite)
-- macOS (Apple Silicon / Intel)
-- Linux x86_64
+| Piattaforma | Stato |
+|-------------|-------|
+| Windows x86_64 | Testata |
+| Windows ARM64 (Qualcomm Snapdragon X Elite) | Testata |
+| macOS (Apple Silicon / Intel) | Non ancora testata |
+| Linux x86_64 | Non ancora testata |
+
+Il codice è cross-platform per design (whisper.cpp, Symphonia, cpal compilano su tutte le piattaforme), ma ad oggi solo Windows è stato verificato.
 
 ## Licenza
 
