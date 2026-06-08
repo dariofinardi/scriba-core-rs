@@ -38,7 +38,7 @@ impl TranscriberBackend for WhisperCppBackend {
         full_params.set_single_segment(false);
 
         if params.language == "auto" {
-            full_params.set_detect_language(true);
+            full_params.set_language(None);
         } else {
             full_params.set_language(Some(&params.language));
         }
