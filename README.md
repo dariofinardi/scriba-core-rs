@@ -1,70 +1,70 @@
 # scriba-core
 
-**Motore di trascrizione vocale headless per Rust** — decodifica audio, resampling, inferenza Whisper, cattura microfono e diarizzazione speaker, senza alcuna dipendenza da UI.
+**Headless speech-to-text engine for Rust** — audio decoding, resampling, Whisper inference, microphone capture, and speaker diarization, with no UI dependencies.
 
 ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 
-## Perché scriba-core
+## Why scriba-core
 
-I servizi di trascrizione cloud presentano limiti concreti: latenza di rete, costi a consumo, rischi per la privacy dei dati vocali. `scriba-core` porta la trascrizione interamente on-device, utilizzando [whisper.cpp](https://github.com/ggerganov/whisper.cpp) — l'implementazione C/C++ di [Whisper](https://github.com/openai/whisper) di OpenAI — attraverso binding Rust nativi.
+Cloud transcription services come with real limitations: network latency, usage-based costs, and privacy risks for voice data. `scriba-core` brings transcription entirely on-device, using [whisper.cpp](https://github.com/ggerganov/whisper.cpp) — the C/C++ implementation of OpenAI's [Whisper](https://github.com/openai/whisper) — through native Rust bindings.
 
-Il crate è pensato come fondazione riutilizzabile: è il cuore di [Scriba](https://github.com/dariofinardi/scriba-rs) (l'app desktop con UI), ma può essere integrato in qualsiasi applicazione Rust che necessiti di speech-to-text senza dipendere da un framework grafico.
+The crate is designed as a reusable foundation: it powers [Scriba](https://github.com/dariofinardi/scriba-rs) (the desktop app with UI), but can be integrated into any Rust application that needs speech-to-text without depending on a UI framework.
 
-## Struttura del workspace
+## Workspace structure
 
 ```
 scriba-core-rs/
-├── core/          # Libreria scriba-core
-├── whisper-cli/   # Tool CLI per trascrizione da terminale
-└── cmake/         # Helper di build per cross-compilazione ARM64
+├── core/          # scriba-core library crate
+├── whisper-cli/   # CLI transcription tool
+└── cmake/         # Build helpers for ARM64 cross-compilation
 ```
 
-## Funzionalità
+## Features
 
-### Decodifica audio
-Decodifica file WAV, MP3 e OGG in PCM mono f32 tramite [Symphonia](https://crates.io/crates/symphonia). L'audio multi-canale viene automaticamente mixato in mono.
+### Audio decoding
+Decode WAV, MP3, and OGG files to mono f32 PCM via [Symphonia](https://crates.io/crates/symphonia). Multi-channel audio is automatically mixed to mono.
 
 ### Resampling
-Resampling sinc di alta qualità a 16 kHz (il sample rate atteso da Whisper) via [Rubato](https://crates.io/crates/rubato), con filtro finestra BlackmanHarris2 a 256 tap. Passthrough quando la sorgente è già a 16 kHz.
+High-quality sinc resampling to 16 kHz (the sample rate expected by Whisper) via [Rubato](https://crates.io/crates/rubato), using a 256-tap BlackmanHarris2 windowed filter. Passthrough when the source is already at 16 kHz.
 
-### Trascrizione
-Inferenza whisper.cpp attraverso il trait `TranscriberBackend`, che restituisce `Segment` con timestamp di inizio e fine. Supporta:
-- Rilevamento automatico della lingua o selezione esplicita
-- Traduzione verso l'inglese
-- Numero di thread configurabile
+### Transcription
+whisper.cpp inference through the `TranscriberBackend` trait, returning `Segment`s with start/end timestamps. Supports:
+- Automatic language detection or explicit language selection
+- Translation to English
+- Configurable thread count
 
-### Cattura microfono in tempo reale
-Trascrizione live dal microfono di sistema via [cpal](https://crates.io/crates/cpal). L'audio viene catturato in finestre con overlap per evitare il taglio di parole ai confini dei chunk.
+### Live microphone capture
+Real-time transcription from the system microphone via [cpal](https://crates.io/crates/cpal). Audio is captured in overlapping windows to avoid cutting words at chunk boundaries.
 
-### Diarizzazione speaker (opzionale)
-Identifica *chi* sta parlando in ogni segmento tramite [sherpa-rs](https://crates.io/crates/sherpa-rs). Si attiva con la feature flag `diarize`. I modelli di segmentazione ed embedding vengono scaricati automaticamente al primo utilizzo dal progetto [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx).
+### Speaker diarization (optional)
+Identify *who* is speaking in each segment via [sherpa-rs](https://crates.io/crates/sherpa-rs). Enable with the `diarize` feature flag. Segmentation and embedding models are downloaded automatically on first use from the [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) project.
 
-## Feature flag
+## Feature flags
 
-| Flag | Descrizione |
+| Flag | Description |
 |------|-------------|
-| `diarize` | Diarizzazione speaker via sherpa-rs + ONNX Runtime |
-| `cuda` | Accelerazione GPU NVIDIA (CUDA) |
-| `metal` | Accelerazione GPU Apple (Metal) |
-| `vulkan` | Accelerazione GPU cross-platform (Vulkan) |
+| `diarize` | Speaker diarization via sherpa-rs + ONNX Runtime |
+| `cuda` | NVIDIA GPU acceleration (CUDA) |
+| `metal` | Apple GPU acceleration (Metal) |
+| `vulkan` | Cross-platform GPU acceleration (Vulkan) |
 
-## Utilizzo come libreria
+## Usage as a library
 
-Aggiungi al tuo `Cargo.toml`:
+Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
 scriba-core = { git = "https://github.com/dariofinardi/scriba-core-rs.git", tag = "v20260606" }
 ```
 
-### Trascrivere un file
+### Transcribe a file
 
 ```rust
 use scriba_core::audio::{decode_audio_file, resample_to_16khz};
 use scriba_core::transcriber::{TranscribeParams, TranscriberBackend, WhisperCppBackend};
 
-let decoded = decode_audio_file("registrazione.wav".as_ref())?;
+let decoded = decode_audio_file("recording.wav".as_ref())?;
 let pcm = resample_to_16khz(&decoded.samples, decoded.sample_rate)?;
 
 let mut backend = WhisperCppBackend::new("ggml-large-v3-turbo.bin".as_ref())?;
@@ -75,76 +75,76 @@ for seg in &segments {
 }
 ```
 
-### Trascrizione live dal microfono
+### Live microphone transcription
 
 ```rust
 use scriba_core::mic;
 use scriba_core::transcriber::{TranscribeParams, WhisperCppBackend};
 
-let mut backend = WhisperCppBackend::new("modello.bin".as_ref())?;
+let mut backend = WhisperCppBackend::new("model.bin".as_ref())?;
 mic::run_live(&mut backend, &TranscribeParams::default())?;
 ```
 
 ## whisper-cli
 
-Tool da riga di comando incluso nel workspace, pronto all'uso.
+A ready-to-use command-line tool included in the workspace.
 
-### Trascrizione file
+### File transcription
 
 ```sh
-cargo run -p whisper-cli --release -- --model ggml-large-v3-turbo.bin file registrazione.wav
+cargo run -p whisper-cli --release -- --model ggml-large-v3-turbo.bin file recording.wav
 ```
 
-### Microfono live
+### Live microphone
 
 ```sh
 cargo run -p whisper-cli --release -- --model ggml-large-v3-turbo.bin listen
 ```
 
-### Con diarizzazione speaker
+### With speaker diarization
 
 ```sh
-cargo run -p whisper-cli --release --features diarize -- --model ggml-large-v3-turbo.bin --diarize file riunione.wav
+cargo run -p whisper-cli --release --features diarize -- --model ggml-large-v3-turbo.bin --diarize file meeting.wav
 ```
 
-### Opzioni
+### Options
 
 ```
 Usage: whisper-cli [OPTIONS] --model <MODEL> <COMMAND>
 
 Commands:
-  file    Trascrivi un file audio (wav, mp3, ogg)
-  listen  Trascrizione live dal microfono di sistema
+  file    Transcribe an audio file (wav, mp3, ogg)
+  listen  Live transcription from the system microphone
 
 Options:
-  -m, --model <MODEL>        Path al file modello GGML/GGUF [env: WHISPER_MODEL]
-  -l, --language <LANGUAGE>  Codice lingua ("it", "en") o "auto" [default: auto]
-  -t, --translate            Traduci in inglese invece di trascrivere
-  -d, --diarize              Abilita diarizzazione (richiede --features diarize)
-  -j, --threads <THREADS>    Numero thread di inferenza [default: tutti i core]
+  -m, --model <MODEL>        Path to the GGML/GGUF model file [env: WHISPER_MODEL]
+  -l, --language <LANGUAGE>  Language code ("it", "en") or "auto" [default: auto]
+  -t, --translate            Translate to English instead of transcribing
+  -d, --diarize              Enable speaker diarization (requires --features diarize)
+  -j, --threads <THREADS>    Number of inference threads [default: all cores]
 ```
 
-## Modelli Whisper
+## Whisper models
 
-I modelli GGML si scaricano da [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main). Scriba usa versioni quantizzate Q5 per ridurre la dimensione mantenendo qualità prossima al float16:
+GGML models can be downloaded from [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main). Scriba uses Q5 quantized versions to reduce size while maintaining quality close to float16:
 
-| Modello | Dimensione | Velocità | Qualità | Uso consigliato |
-|---------|-----------|----------|---------|-----------------|
-| `ggml-small-q5_1.bin` | 190 MB | ★★★★ | ★★ | Appunti rapidi, bozze |
-| `ggml-medium-q5_0.bin` | 515 MB | ★★★ | ★★★ | Buon compromesso |
-| `ggml-large-v3-turbo-q5_0.bin` | 574 MB | ★★★ | ★★★★ | Massima accuratezza |
+| Model | Size | Speed | Quality | Recommended use |
+|-------|------|-------|---------|-----------------|
+| `ggml-small-q5_1.bin` | 190 MB | ★★★★ | ★★ | Quick notes, drafts |
+| `ggml-medium-q5_0.bin` | 515 MB | ★★★ | ★★★ | Good balance |
+| `ggml-large-v3-turbo-q5_0.bin` | 574 MB | ★★★ | ★★★★ | Maximum accuracy |
 
-Tutti supportano oltre 90 lingue.
+All models support 90+ languages.
 
-## Build
+## Building
 
-### Build standard
+### Standard build
 
 ```sh
 cargo build --release
 ```
 
-### Con diarizzazione
+### With diarization
 
 ```sh
 cargo build --release --features diarize
@@ -152,7 +152,7 @@ cargo build --release --features diarize
 
 ### Windows ARM64 (Qualcomm Snapdragon)
 
-Richiede Ninja e clang-cl. Impostare le variabili d'ambiente:
+Requires Ninja and clang-cl. Set the following environment variables:
 
 ```powershell
 $env:PATH = "cmake;" + $env:PATH
@@ -163,31 +163,31 @@ $env:CMAKE_CXX_COMPILER = "clang-cl"
 $env:CMAKE_ASM_COMPILER = "clang-cl"
 ```
 
-Poi compilare normalmente con `cargo build --release`.
+Then build normally with `cargo build --release`.
 
-## Dipendenze principali
+## Key dependencies
 
-| Crate | Ruolo |
-|-------|-------|
-| [whisper-rs](https://github.com/dariofinardi/whisper-rs) | Binding Rust per whisper.cpp (fork con fix Windows) |
-| [symphonia](https://crates.io/crates/symphonia) | Decodifica audio multi-formato |
-| [rubato](https://crates.io/crates/rubato) | Resampling sinc di alta qualità |
-| [cpal](https://crates.io/crates/cpal) | Cattura audio cross-platform |
-| [sherpa-rs](https://crates.io/crates/sherpa-rs) | Diarizzazione speaker (opzionale) |
+| Crate | Role |
+|-------|------|
+| [whisper-rs](https://github.com/dariofinardi/whisper-rs) | Rust bindings for whisper.cpp (fork with Windows fixes) |
+| [symphonia](https://crates.io/crates/symphonia) | Multi-format audio decoding |
+| [rubato](https://crates.io/crates/rubato) | High-quality sinc resampling |
+| [cpal](https://crates.io/crates/cpal) | Cross-platform audio capture |
+| [sherpa-rs](https://crates.io/crates/sherpa-rs) | Speaker diarization (optional) |
 
-## Piattaforme
+## Platforms
 
-| Piattaforma | Stato |
-|-------------|-------|
-| Windows x86_64 | Testata |
-| Windows ARM64 (Qualcomm Snapdragon X Elite) | Testata |
-| macOS (Apple Silicon / Intel) | Non ancora testata |
-| Linux x86_64 | Non ancora testata |
+| Platform | Status |
+|----------|--------|
+| Windows x86_64 | Tested |
+| Windows ARM64 (Qualcomm Snapdragon X Elite) | Tested |
+| macOS (Apple Silicon / Intel) | Not yet tested |
+| Linux x86_64 | Not yet tested |
 
-Il codice è cross-platform per design (whisper.cpp, Symphonia, cpal compilano su tutte le piattaforme), ma ad oggi solo Windows è stato verificato.
+The codebase is cross-platform by design (whisper.cpp, Symphonia, and cpal all compile on every platform), but only Windows has been verified so far.
 
-## Licenza
+## License
 
-AGPL-3.0-or-later — vedi [LICENSE](LICENSE).
+AGPL-3.0-or-later — see [LICENSE](LICENSE).
 
 Copyright © 2026 Dario Finardi
